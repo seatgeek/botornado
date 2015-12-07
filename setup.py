@@ -19,7 +19,7 @@ setup(
     author_email='peek824545201@gmail.com',
     url='https://github.com/yyuu/botornado',
     install_requires=[
-        "tornado>=2.1.1",
+        "tornado>=3.2",
     ],
     packages=find_packages(),
     test_suite='botornado.test',
