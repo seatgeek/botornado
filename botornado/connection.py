@@ -43,17 +43,10 @@ Handles basic connections to AWS
 """
 
 from __future__ import with_statement
-import base64
-import errno
-import httplib
-import os
-import Queue
-import random
-import re
-import socket
-import sys
-import time
-import urllib, urlparse
+from future.standard_library import install_aliases
+install_aliases()
+
+import urllib
 import xml.sax
 
 import boto.auth
@@ -63,17 +56,14 @@ import boto.utils
 import boto.handler
 import boto.cacerts
 
-from boto import config, UserAgent
-from boto.exception import AWSConnectionError, BotoClientError, BotoServerError
-from boto.provider import Provider
 from boto.resultset import ResultSet
 
 from boto.connection import *
 import StringIO
-import httplib
 import mimetools
 import tornado.httpclient
 import tornado.httputil
+
 
 class AsyncHTTPConnection(object):
     """
@@ -98,26 +88,26 @@ class AsyncHTTPConnection(object):
         self.path = path
         self.method = method
         if body is not None:
-            if hasattr(body,'read'): # file-like object
+            if hasattr(body, 'read'):  # file-like object
                 self.body = body.read()
             else:
                 self.body = body if body else None
         if headers is not None:
-            self.headers += [ (k, headers[k]) for k in headers ]
+            self.headers += [(k, headers[k]) for k in headers]
 
     def getrequest(self, scheme='http'):
-        if self.port and (( scheme == 'http' and self.port != 80 ) or ( scheme == 'https' and self.port != 443 )):
+        if self.port and ((scheme == 'http' and self.port != 80) or (scheme == 'https' and self.port != 443)):
             host = "%s:%d" % (self.host, self.port)
         else:
             host = self.host
-        url = urlparse.urlunsplit((scheme, host, self.path, '', ''))
+        url = urllib.parse.urlunsplit((scheme, host, self.path, '', ''))
         headers = tornado.httputil.HTTPHeaders()
-        for (k,v) in self.headers:
+        for (k, v) in self.headers:
             headers.add(k, v)
         request = tornado.httpclient.HTTPRequest(
             url, method=self.method, headers=headers, body=self.body,
             connect_timeout=self.timeout, request_timeout=self.timeout,
-            validate_cert=False, # FIXME: disable validation since we could not validate S3 certs
+            validate_cert=False,  # FIXME: disable validation since we could not validate S3 certs
         )
         return request
 
@@ -152,9 +142,11 @@ class AsyncHTTPConnection(object):
         else:
             self.body = data if data else None
 
+
 class AsyncHTTPSConnection(AsyncHTTPConnection):
     def getrequest(self, scheme='https'):
         return AsyncHTTPConnection.getrequest(self, scheme=scheme)
+
 
 class AsyncHTTPResponse(object):
     """
@@ -177,14 +169,15 @@ class AsyncHTTPResponse(object):
         return self.response.headers.get(name, default)
 
     def getheaders(self):
-        return map(lambda (k,v): (k,v), self.response.headers.get_all())
+        return map(lambda (k, v): (k, v), self.response.headers.get_all())
 
     def _get_msg(self):
         if self._msg is None:
-            fp = StringIO.StringIO("\r\n".join(map(lambda (k,v): "%s: %s" % (k,v), self.response.headers.get_all())))
+            fp = StringIO.StringIO("\r\n".join(map(lambda (k, v): "%s: %s" % (k, v), self.response.headers.get_all())))
             self._msg = mimetools.Message(fp)
         return self._msg
     msg = property(_get_msg)
+
 
 class AsyncConnection(object):
     def __init__(self, http_client=None, **kwargs):
@@ -218,6 +211,7 @@ class AsyncConnection(object):
                                request.headers)
             connection.getresponse(callback=callback)
 
+
 class AsyncAWSAuthConnection(AsyncConnection, boto.connection.AWSAuthConnection):
     def __init__(self, host, http_client=None, http_client_params={}, **kwargs):
         AsyncConnection.__init__(self, http_client=http_client, **http_client_params)
@@ -227,6 +221,7 @@ class AsyncAWSAuthConnection(AsyncConnection, boto.connection.AWSAuthConnection)
         request = self.build_base_http_request(method, path, auth_path,
                                                {}, headers, data, host)
         self._mexe(request, sender=sender, callback=callback)
+
 
 class AsyncAWSQueryConnection(AsyncConnection, boto.connection.AWSQueryConnection):
     def __init__(self, http_client=None, http_client_params={}, **kwargs):
@@ -245,6 +240,7 @@ class AsyncAWSQueryConnection(AsyncConnection, boto.connection.AWSQueryConnectio
                  parent=None, verb='GET', callback=None):
         if not parent:
             parent = self
+
         def list_got(response):
             body = response.read()
             boto.log.debug(body)
@@ -267,6 +263,7 @@ class AsyncAWSQueryConnection(AsyncConnection, boto.connection.AWSQueryConnectio
                    parent=None, verb='GET', callback=None):
         if not parent:
             parent = self
+
         def object_got(response):
             body = response.read()
             boto.log.debug(body)
@@ -288,6 +285,7 @@ class AsyncAWSQueryConnection(AsyncConnection, boto.connection.AWSQueryConnectio
     def get_status(self, action, params, path='/', parent=None, verb='GET', callback=None):
         if not parent:
             parent = self
+
         def status_got(response):
             body = response.read()
             boto.log.debug(body)
