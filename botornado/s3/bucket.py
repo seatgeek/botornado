@@ -117,7 +117,7 @@ class AsyncBucket(Bucket):
             if isinstance(v, unicode):
                 v = v.encode('utf-8')
             if v is not None and v != '':
-                l.append('%s=%s' % (urllib.quote(k), urllib.quote(str(v))))
+                l.append('%s=%s' % (urllib.parse.quote(k), urllib.parse.quote(str(v))))
         if len(l):
             s = initial_query_string + '&' + '&'.join(l)
         else:
