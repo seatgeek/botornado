@@ -19,7 +19,6 @@ setup(
     author_email='peek824545201@gmail.com',
     url='https://github.com/yyuu/botornado',
     install_requires=[
-#       "boto==2.2.2", # current version of botornado includes tested version of boto in source tree
         "tornado>=2.1.1",
     ],
     packages=find_packages(),
